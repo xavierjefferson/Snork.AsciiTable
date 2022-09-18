@@ -1,0 +1,32 @@
+﻿<?xml version="1.0"?>
+
+<package>
+	<metadata>
+		<id>Snork.AsciiTable</id>
+		<version>1.1.1470</version>
+		<authors>Xavier Jefferson</authors>
+		<owners>XavierJefferson</owners>
+		<licenseUrl>https://www.gnu.org/licenses/lgpl-3.0.en.html</licenseUrl>
+		<projectUrl>https://github.com/xavierjefferson/Snork.AsciiTable</projectUrl>
+		<!--<iconUrl>http://ICON_URL_HERE_OR_DELETE_THIS_LINE</iconUrl>-->
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>Ascii Table Generator</description>
+		<releaseNotes>
+			Initial release
+		</releaseNotes>
+		<copyright>Copyright © 2020-2022 Xavier Jefferson</copyright>
+		<tags>ascii table</tags>
+		<dependencies>
+		 
+		</dependencies>
+
+
+	</metadata>
+	<files>
+		<file src="..\src\Snork.AsciiTable\bin\release\netstandard2.0\Snork.AsciiTable.dll"
+		      target="lib\netstandard2.0" />
+		<file src="..\src\Snork.AsciiTable\bin\release\netstandard2.0\Snork.AsciiTable.pdb"
+		      target="lib\netstandard2.0" />
+		<file src="..\src\Snork.AsciiTable\**\*.cs;" target="src" exclude="**\obj*\**\*.cs" />
+	</files>
+</package>

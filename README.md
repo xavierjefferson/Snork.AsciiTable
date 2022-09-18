@@ -3,6 +3,8 @@
 
 This library generates tables in Ascii from raw data, enumerables, and instances of System.Data.DataTable.
 
+[![Latest version](https://img.shields.io/nuget/v/Snork.AsciiTable.svg)](https://www.nuget.org/packages/Snork.AsciiTable/) 
+
 ## Table of Contents
 
  - [Example 1 - Populate table in code](#example-1)
