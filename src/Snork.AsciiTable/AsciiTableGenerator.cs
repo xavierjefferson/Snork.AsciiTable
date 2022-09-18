@@ -53,6 +53,10 @@ namespace Snork.AsciiTable
 
         private int _spacing;
 
+        public AsciiTableGenerator(string title) : this(new Options() { Title = title })
+        {
+
+        }
 
         public AsciiTableGenerator(Options options = null)
         {
@@ -225,7 +229,7 @@ namespace Snork.AsciiTable
             foreach (DataRow row in table.Rows)
             {
                 List<object> items = new List<object>();
-                for (var i = 0; i < table.Columns.Count;i++)
+                for (var i = 0; i < table.Columns.Count; i++)
                 {
                     items.Add(row[i]);
                 }
@@ -236,7 +240,7 @@ namespace Snork.AsciiTable
         }
 
 
-    
+
 
         private List<T> ArrayFill<T>(int length, T fill)
         {
@@ -475,5 +479,5 @@ namespace Snork.AsciiTable
         public bool DisplayHeader { get; set; } = true;
     }
 
-   
+
 }
