@@ -61,15 +61,15 @@ xxyy  '-------------'", asString);
             tmp.Add(new List<object> { "Case1", "Case2" });
             tmp.Add(new[] { new TestInfo { Field3 = "abc", Field2 = "def" } },
                 i => new List<object> { i.Field2, i.Field3 });
-            tmp.SetAlignLeft(1).SetAlignRight(2);
+            tmp.SetAlignLeft(0).SetAlignRight(1);
             var asString = tmp.ToString();
             Assert.NotNull(asString);
             Assert.Equal(@".-------------------.
 | Column1 | Column2 |
 |---------|---------|
-| Value1  | Value2  |
-| Case1   | Case2   |
-| def     | abc     |
+| Value1  |  Value2 |
+| Case1   |   Case2 |
+| def     |     abc |
 '-------------------'", asString);
             var rows = tmp.GetRows();
             Assert.Equal(3, rows.Count);
@@ -118,7 +118,7 @@ xxyy  '-------------'", asString);
                 .SetHeadingAlignLeft();
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
-            var heading = tmp.GetHeading();
+            var heading = tmp.GetCaptions();
             Assert.NotNull(heading);
             Assert.NotEmpty(heading);
             Assert.Equal(nameof(TestInfo.Field2), heading[0]);

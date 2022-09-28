@@ -1,61 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Snork.AsciiTable
 {
-    internal static class TypeHelper
-    {
-        public static bool HasNumericType(this object o)
-        {
-            if (o == null) return false;
-            if (o is byte || o is sbyte || o is ushort || o is uint || o is ulong || o is short || o is int ||
-                o is long || o is decimal || o is double || o is float) return true;
-            switch (Type.GetTypeCode(o.GetType()))
-            {
-                case TypeCode.Byte:
-                case TypeCode.SByte:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.Int64:
-                case TypeCode.Decimal:
-                case TypeCode.Double:
-                case TypeCode.Single:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-    }
-
-    public enum CellAlignmentEnum
-    {
-        Left,
-        Right,
-        Center
-    }
-
-
     public class AsciiTableGenerator
     {
-        private readonly Dictionary<int, CellAlignmentEnum> _alignments = new Dictionary<int, CellAlignmentEnum>();
-
-        private readonly List<List<object>> _rows = new List<List<object>>();
+        private readonly DataTable _dataTable = new DataTable();
         private bool _border;
         private char _edge, _top, _bottom, _fill;
-
         private bool _equalColumnSize;
-        private List<object> _heading;
-
+        private bool _hasCaptions;
         private int _spacing;
 
-        public AsciiTableGenerator(string title) : this(new Options() { Title = title })
+        public AsciiTableGenerator(string title) : this(new Options { Title = title })
         {
-
         }
 
         public AsciiTableGenerator(Options options = null)
@@ -69,22 +30,22 @@ namespace Snork.AsciiTable
 
         public AsciiTableGenerator Clear()
         {
-            _rows.Clear();
-            _alignments.Clear();
+            _hasCaptions = false;
             _spacing = 1;
-            _heading = null;
+
             SetBorder();
-            return this;
+            return this.ClearRows();
         }
 
         public List<List<object>> GetRows()
         {
-            return _rows;
+            return _dataTable.Rows.Cast<DataRow>().Select(i => i.ItemArray.ToList()).ToList();
         }
 
         public AsciiTableGenerator ClearRows()
         {
-            _rows.Clear();
+            _dataTable.Clear();
+            _dataTable.Columns.Clear();
             return this;
         }
 
@@ -102,19 +63,20 @@ namespace Snork.AsciiTable
             return this;
         }
 
-        private static string Align(CellAlignmentEnum cellAlignment, object str, int length, char padChar)
+        private static string Align(CellAlignmentEnum cellAlignment, object cellValue, int length, char padChar)
         {
             switch (cellAlignment)
             {
+                case CellAlignmentEnum.NotSpecified:
                 case CellAlignmentEnum.Left:
-                    return AlignLeft(str, length, padChar);
+                    return AlignLeft(cellValue, length, padChar);
                 case CellAlignmentEnum.Right:
-                    return AlignRight(str, length, padChar);
+                    return AlignRight(cellValue, length, padChar);
                 case CellAlignmentEnum.Center:
-                    return AlignCenter(str, length, padChar);
+                    return AlignCenter(cellValue, length, padChar);
             }
 
-            return AlignAuto(str, length, padChar);
+            return AlignAuto(cellValue, length, padChar);
         }
 
         public AsciiTableGenerator SetTitleAlign(CellAlignmentEnum cellAlignment)
@@ -123,7 +85,8 @@ namespace Snork.AsciiTable
             return this;
         }
 
-        public AsciiTableGenerator SetBorder(char? edge = null, char? fill = null, char? top = null, char? bottom = null)
+        public AsciiTableGenerator SetBorder(char? edge = null, char? fill = null, char? top = null,
+            char? bottom = null)
         {
             _border = true;
             if (fill == null && top == null && bottom == null) fill = top = bottom = edge;
@@ -135,14 +98,14 @@ namespace Snork.AsciiTable
             return this;
         }
 
-        private static string AlignLeft(object value, int length, char? padChar = ' ')
+        private static string AlignLeft(object cellValue, int length, char? padChar = ' ')
         {
-            return (value ?? "").ToString().PadRight(length, padChar ?? ' ');
+            return (cellValue ?? "").ToString().PadRight(length, padChar ?? ' ');
         }
 
-        private static string AlignCenter(object value, int length, char? padChar = ' ')
+        private static string AlignCenter(object cellValue, int length, char? padChar = ' ')
         {
-            var coalescedValue = (value ?? "").ToString();
+            var coalescedValue = (cellValue ?? "").ToString();
             var allSpace = length - coalescedValue.Length;
             if (allSpace > 0)
             {
@@ -153,48 +116,79 @@ namespace Snork.AsciiTable
             }
 
             return coalescedValue;
-
-            //return .PadRight(leftSpaceLeft, padChar ?? ' ').PadLeft(length, padChar ?? ' ');
         }
 
-        private static string AlignAuto(object value, int length, char? padChar = ' ')
+        private static string AlignAuto(object cellValue, int length, char? padChar = ' ')
         {
-            if (value == null) value = string.Empty;
-            var asString = value.ToString();
+            if (cellValue == null) cellValue = string.Empty;
+            var asString = cellValue.ToString();
             if (asString.Length < length)
-                return value.HasNumericType() ? AlignRight(value, length, padChar) : AlignLeft(value, length, padChar);
+                return cellValue.HasNumericType() ? AlignRight(cellValue, length, padChar) : AlignLeft(cellValue, length, padChar);
 
             return asString;
         }
 
-        public AsciiTableGenerator SetHeading(List<object> row)
+        private List<AsciiDataColumn> GetColumns()
         {
-            _heading = row;
+            return _dataTable.Columns.Cast<AsciiDataColumn>().ToList();
+        }
+
+        public AsciiTableGenerator SetCaptions(List<string> captions)
+        {
+            _hasCaptions = true;
+            EnsureColumnsExist(captions.Count);
+
+            var columns = GetColumns();
+            foreach (var item in captions.Select((value, index) => new { Caption = value, Index = index }))
+            {
+                columns[item.Index].Caption = item.Caption;
+            }
+
             return this;
         }
 
-        public AsciiTableGenerator SetHeading(params object[] row)
+        [Obsolete("Use SetCaptions")]
+        public AsciiTableGenerator SetHeading(List<string> captions)
         {
-            _heading = row.ToList();
-            return this;
+            return SetCaptions(captions);
+        }
+
+        public AsciiTableGenerator SetCaptions(params string[] captions)
+        {
+
+            return SetCaptions(captions.ToList());
+        }
+
+        [Obsolete("Use SetCaptions")]
+        public AsciiTableGenerator SetHeading(params string[] captions)
+        {
+            return SetCaptions(captions.ToList());
         }
 
         public AsciiTableGenerator SetHeadingAlign(CellAlignmentEnum cellAlignment)
         {
-            Options.HeadingCellAlignment = cellAlignment;
+            Options.CaptionCellAlignment = cellAlignment;
             return this;
         }
 
         public AsciiTableGenerator Add(IEnumerable<object> row)
         {
-            _rows.Add(row.ToList());
-            return this;
+            return Add(row.ToArray());
         }
 
         public AsciiTableGenerator Add(params object[] row)
         {
-            _rows.Add(row.ToList());
+            EnsureColumnsExist(row.Length);
+            _dataTable.Rows.Add(row);
             return this;
+        }
+
+        private void EnsureColumnsExist(int rowLength)
+        {
+            if (_dataTable.Columns.Count >= rowLength) return;
+            var toAdd = rowLength - _dataTable.Columns.Count;
+            for (var i = 0; i < toAdd; i++)
+                _dataTable.Columns.Add(new AsciiDataColumn());
         }
 
         public AsciiTableGenerator SetEqualColumnSize(bool value)
@@ -208,8 +202,13 @@ namespace Snork.AsciiTable
             options = options ?? new Options();
             var result = new AsciiTableGenerator(options);
             var propertyInfos = typeof(T).GetProperties().Where(i => i.CanRead).ToList();
-
-            result.SetHeading(propertyInfos.Select(i => (object)i.Name).ToList());
+            result.EnsureColumnsExist(propertyInfos.Count);
+            var columns = result.GetColumns();
+            foreach (var item in propertyInfos.Select((value, index) => new { PropertyInfo = value, Index = index }))
+            {
+                columns[item.Index].DataType = item.PropertyInfo.PropertyType;
+            }
+            result.SetCaptions(propertyInfos.Select(i => i.Name).ToList());
             foreach (var item in data)
             {
                 var values = propertyInfos.Select(i => i.GetValue(item)).ToList();
@@ -222,40 +221,44 @@ namespace Snork.AsciiTable
         public static AsciiTableGenerator FromDataTable(DataTable table, Options options = null)
         {
             var result = new AsciiTableGenerator(options);
+            foreach (var item in table.Columns.Cast<DataColumn>()
+                         .Select((value, index) => new { DataColumn = value, Index = index }))
+            {
+                AsciiDataColumn col = new AsciiDataColumn()
+                {
+                    DataType = item.DataColumn.DataType,
+                    AllowDBNull = item.DataColumn.AllowDBNull,
+                    DateTimeMode = item.DataColumn.DateTimeMode,
+                    ColumnName = item.DataColumn.ColumnName
+                };
+                result._dataTable.Columns.Add(col);
+            }
 
 
-            result.SetHeading(table.Columns.Cast<DataColumn>().Select(i => (object)i.ColumnName).ToList());
-            //foreach (DataRow row in table.Rows) result.Add(row.ItemArray);
+            result.SetCaptions(table.Columns.Cast<DataColumn>().Select(i => i.Caption).ToList());
+
             foreach (DataRow row in table.Rows)
             {
-                List<object> items = new List<object>();
-                for (var i = 0; i < table.Columns.Count; i++)
-                {
-                    items.Add(row[i]);
-                }
-
-                result.Add(items);
+                result._dataTable.Rows.Add(row.ItemArray);
             }
+
             return result;
         }
 
 
-
-
-        private List<T> ArrayFill<T>(int length, T fill)
+        private List<T> ListFill<T>(int length, T fill)
         {
             var result = new List<T>();
             for (var i = 0; i < length; i++) result.Add(fill);
-
             return result;
         }
 
-        public List<object> GetHeading()
+        public List<object> GetCaptions()
         {
-            return _heading.ToList();
+            return GetColumns().Select(i => (object)i.Caption).ToList();
         }
 
-        private string _RenderTitle(int length)
+        private string RenderTitle(int length)
         {
             var name = $" {Options.Title} ";
             var str = Align(Options.TitleCellAlignment, name, length - 1, ' ');
@@ -274,7 +277,7 @@ namespace Snork.AsciiTable
 
         public AsciiTableGenerator SetDisplayHeader(bool value)
         {
-            Options.DisplayHeader = value;
+            Options.DisplayCaptions = value;
             return this;
         }
 
@@ -313,20 +316,37 @@ namespace Snork.AsciiTable
             return SetAlign(index, CellAlignmentEnum.Center);
         }
 
-        private string RenderRow(RenderInfo renderInfo, List<object> row, char padChar, bool isHeader,
+        private string RenderRow(RenderInfo renderInfo, List<object> row, char padChar,
+            bool isHeader,
+            List<AsciiDataColumn> columns,
             CellAlignmentEnum? alignment = null)
         {
             var tmp = new List<string> { "" };
 
-            for (var k = 0; k < renderInfo.CellCount; k++)
+            for (var index = 0; index < renderInfo.CellCount; index++)
             {
-                var length = _equalColumnSize ? renderInfo.MaxColumnLengths.Max() : renderInfo.MaxColumnLengths[k];
+                var length = _equalColumnSize ? renderInfo.MaxColumnLength : renderInfo.ColumnLengths[index];
 
-                CellAlignmentEnum? use;
+                CellAlignmentEnum use;
                 if (isHeader)
-                    use = alignment ?? CellAlignmentEnum.Center;
+                {
+                    var columnCaptionAlignment = columns[index].CaptionAlignment;
+                    if (columnCaptionAlignment == CellAlignmentEnum.NotSpecified)
+                    {
+                        use = Options.CaptionCellAlignment == CellAlignmentEnum.NotSpecified
+                            ? CellAlignmentEnum.Center
+                            : Options.CaptionCellAlignment;
+                    }
+                    else
+                    {
+                        use = columnCaptionAlignment;
+                    }
+                    
+                }
                 else
-                    use = _alignments.ContainsKey(k) ? _alignments[k] : alignment;
+                {
+                    use = columns[index].CellAlignment;
+                }
 
                 AlignDelegate alignDelegate;
                 switch (use)
@@ -337,6 +357,7 @@ namespace Snork.AsciiTable
                     case CellAlignmentEnum.Right:
                         alignDelegate = AlignRight;
                         break;
+
                     case CellAlignmentEnum.Left:
                         alignDelegate = AlignLeft;
                         break;
@@ -345,7 +366,7 @@ namespace Snork.AsciiTable
                         break;
                 }
 
-                tmp.Add(alignDelegate(row[k], length, padChar));
+                tmp.Add(alignDelegate(row[index], length, padChar));
             }
 
             var front = string.Join($"{padChar}{_edge}{padChar}", tmp);
@@ -353,48 +374,29 @@ namespace Snork.AsciiTable
             return $"{front}{padChar}{_edge}";
         }
 
-        private string GetRowSeparator(RenderInfo renderInfo)
+        private string GetRowSeparator(RenderInfo renderInfo, List<AsciiDataColumn> columns)
         {
-            var blanks = ArrayFill<object>(renderInfo.CellCount, _fill);
-            return RenderRow(renderInfo, blanks, _fill, false);
+            var blanks = ListFill<object>(renderInfo.CellCount, _fill);
+            return RenderRow(renderInfo, blanks, _fill, false, columns);
         }
 
         public override string ToString()
         {
-            var all = Options.DisplayHeader && _heading != null && _heading.Any()
-                ? new List<List<object>> { _heading }.Union(_rows).ToList()
-                : _rows;
-            var distinctCounts = all.Select(i => i.Count).Distinct().Count();
-
-            if (distinctCounts > 1)
-                throw new InvalidOperationException("All rows must have the same number of columns");
-            var cellCount = all.Any() ? all.Select(i => i.Count).Max() : 0;
-            var info = new RenderInfo
-            {
-                CellCount = cellCount,
-                MaxColumnLengths = ArrayFill(cellCount, 0)
-            };
-            var body = new List<string>();
-
+            var cellCount = _dataTable.Columns.Count;
+            var columns = GetColumns();
+            var captions = GetCaptions();
+            var rows = GetRows();
+            var info = GetExtents(captions, rows, columns);
             var totalWidth = info.CellCount * 3;
 
-
-            // Calculate max table cell lengths across all rows
-            foreach (var row in all)
-                for (var k = 0; k < info.CellCount; k++)
-                {
-                    var cell = row[k];
-                    info.MaxColumnLengths[k] =
-                        Math.Max(info.MaxColumnLengths[k], cell != null ? cell.ToString().Length : 0);
-                }
-
-
-            var justify = _equalColumnSize ? info.MaxColumnLengths.Max() : 0;
+            var resultLines = new List<string>();
+            var justify = _equalColumnSize ? info.MaxColumnLength : 0;
 
             // Get 
-            foreach (var cellWidth in info.MaxColumnLengths) totalWidth += justify > 0 ? justify : cellWidth + _spacing;
+            foreach (var cellWidth in info.ColumnLengths.Values)
+                totalWidth += justify > 0 ? justify : cellWidth + _spacing;
 
-            if (justify > 0) totalWidth += info.MaxColumnLengths.Count;
+            if (justify > 0) totalWidth += info.ColumnLengths.Count;
 
             totalWidth -= _spacing;
 
@@ -402,28 +404,52 @@ namespace Snork.AsciiTable
                 totalWidth = Options.Title.Length + 2;
 
             // Heading
-            if (_border) body.Add(GetSeparator(totalWidth - info.CellCount + 1, _top));
+            if (_border) resultLines.Add(GetSeparator(totalWidth - info.CellCount + 1, _top));
 
             if (!string.IsNullOrWhiteSpace(Options.Title))
             {
                 if (totalWidth < Options.Title.Length) totalWidth = Options.Title.Length;
-                body.Add(_RenderTitle(totalWidth - info.CellCount + 1));
-                if (_border) body.Add(GetSeparator(totalWidth - info.CellCount + 1));
+                resultLines.Add(RenderTitle(totalWidth - info.CellCount + 1));
+                if (_border) resultLines.Add(GetSeparator(totalWidth - info.CellCount + 1));
             }
 
-            if (_heading != null && _heading.Any())
+            if (_hasCaptions)
             {
-                body.Add(RenderRow(info, _heading, ' ', true, Options.HeadingCellAlignment));
-                body.Add(GetRowSeparator(info));
+                resultLines.Add(RenderRow(info, captions, ' ', true, columns, Options.CaptionCellAlignment));
+                resultLines.Add(GetRowSeparator(info, columns));
             }
 
-            foreach (var row in _rows)
-                body.Add(RenderRow(info, row, ' ', false));
+            foreach (DataRow row in _dataTable.Rows)
+            {
+                resultLines.Add(RenderRow(info, row.ItemArray.ToList(), ' ', false, columns));
+            }
 
-            if (_border) body.Add(GetSeparator(totalWidth - info.CellCount + 1, _bottom));
+            if (_border) resultLines.Add(GetSeparator(totalWidth - info.CellCount + 1, _bottom));
 
             var prefix = Options.Prefix ?? string.Empty;
-            return prefix + string.Join($"{Environment.NewLine}{prefix}", body);
+            return prefix + string.Join($"{Environment.NewLine}{prefix}", resultLines);
+        }
+
+        private RenderInfo GetExtents(List<object> headings, List<List<object>> rows,
+            List<AsciiDataColumn> columns)
+        {
+            var columnLengths = columns.Select((i, j) => j).ToDictionary(i => i, j => 0);
+
+            if (Options.DisplayCaptions && _hasCaptions)
+                foreach (var data in headings.Select((value, index) => new { Value = value, Index = index }))
+                    columnLengths[data.Index] = data.Value == null ? 0 : data.Value.ToString().Length;
+
+            // Calculate max table cell lengths across all rows
+            foreach (var row in rows)
+                for (var index = 0; index < columnLengths.Count; index++)
+                {
+                    var cell = row[index];
+                    columnLengths[index] =
+                        Math.Max(columnLengths[index],
+                            cell != null && cell != DBNull.Value ? cell.ToString().Length : 0);
+                }
+
+            return new RenderInfo(columnLengths, columns.Count);
         }
 
         private string GetSeparator(int length, char? sep = null)
@@ -444,9 +470,16 @@ namespace Snork.AsciiTable
             return this;
         }
 
+        private AsciiDataColumn GetColumn(int index)
+        {
+            EnsureColumnsExist(index + 1);
+            return _dataTable.Columns.Cast<AsciiDataColumn>().Skip(index).First();
+        }
+
         public AsciiTableGenerator SetAlign(int index, CellAlignmentEnum cellAlignment)
         {
-            _alignments[index] = cellAlignment;
+            GetColumn(index).CellAlignment = cellAlignment;
+
             return this;
         }
 
@@ -463,21 +496,19 @@ namespace Snork.AsciiTable
 
         private class RenderInfo
         {
-            public List<int> MaxColumnLengths { get; set; } = new List<int>();
-            public int CellCount { get; set; }
+            public RenderInfo(Dictionary<int, int> columnLengths, int cellCount)
+            {
+                MaxColumnLength = columnLengths.Any() ? columnLengths.Values.Max() : 0;
+                ColumnLengths = columnLengths;
+                CellCount = cellCount;
+            }
+
+            public int MaxColumnLength { get; }
+
+            public Dictionary<int, int> ColumnLengths { get; }
+            public int CellCount { get; }
         }
 
         private delegate string AlignDelegate(object value, int length, char? padChar);
     }
-
-    public class Options
-    {
-        public CellAlignmentEnum HeadingCellAlignment { get; set; } = CellAlignmentEnum.Center;
-        public CellAlignmentEnum TitleCellAlignment { get; set; } = CellAlignmentEnum.Center;
-        public string Title { get; set; }
-        public string Prefix { get; set; }
-        public bool DisplayHeader { get; set; } = true;
-    }
-
-
 }
