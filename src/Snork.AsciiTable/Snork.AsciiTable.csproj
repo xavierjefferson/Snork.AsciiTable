@@ -3,7 +3,31 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Title>Snork.AsciiTable</Title>
+    <PackageId>Snork.AsciiTable</PackageId>
+    <Version>1.1.1500</Version>
+    <Authors>XavierJefferson</Authors>
+    <Copyright>(c) 2022 Xavier Jefferson.  All rights reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/xavierjefferson/Snork.AsciiTable</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/xavierjefferson/Snork.AsciiTable</RepositoryUrl>
+    <PackageReleaseNotes>Add text wrapping</PackageReleaseNotes>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>This library generates tables in Ascii from raw data, enumerables, and instances of System.Data.DataTable.  Within cells, it has text wrapping capability based on Snork.TextWrap (https://github.com/xavierjefferson/Snork.TextWrap)
+</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="snork.textwrap" Version="1.0.1301" />

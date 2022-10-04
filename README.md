@@ -1,7 +1,7 @@
 
 # Ascii Table Generator
 
-This library generates tables in Ascii from raw data, enumerables, and instances of System.Data.DataTable.
+This library generates tables in Ascii from raw data, enumerables, and instances of System.Data.DataTable.  Within cells, it has text wrapping capability based on [Snork.TextWrap](#https://github.com/xavierjefferson/Snork.TextWrap)
 
 [![Latest version](https://img.shields.io/nuget/v/Snork.AsciiTable.svg)](https://www.nuget.org/packages/Snork.AsciiTable/) 
 
@@ -71,7 +71,7 @@ Properties
 
 Methods
 
-| Type | Name | Summary | 
+| Return Type | Name | Summary | 
 | --- | --- | --- | 
 | `AsciiTableGenerator` | Add(`IEnumerable<Object>` row) | Add a row of data | 
 | `AsciiTableGenerator` | Add(`Object[]` row) | Add a row of data | 
@@ -90,7 +90,7 @@ Methods
 | `AsciiTableGenerator` | SetCellAlignment(`Int32` index, `CellAlignmentEnum` cellAlignment) | Set alignment for cells in a given column | 
 | `AsciiTableGenerator` | SetColumnWidth(`Int32` index, `ColumnWidthTypeEnum` columnWidthType, `Nullable<Int32>` width = null) | Set width for a given column, by index.  ColumnWidthType can be Fixed or Auto | 
 | `AsciiTableGenerator` | SetDisplayCaptions(`Boolean` value) | Setting for whether captions are displayed or not | 
-| `AsciiTableGenerator` | SetTextWrapperOptions(`Int32` index, `Action<TextWrapperOptions>` action) | Set text wrapping options for a particular column | 
+| `AsciiTableGenerator` | SetTextWrapperOptions(`Int32` index, `Action<TextWrapperOptions>` action) | Set text wrapping options for a particular column with options from [Snork.TextWrap library] (https://github.com/xavierjefferson/Snork.TextWrap) | 
 | `AsciiTableGenerator` | SetTitle(`String` name) | Set title for the table.  Will be rendered in single cell that spans all columns | 
 | `AsciiTableGenerator` | SetTitleAlignment(`CellAlignmentEnum` alignment) | Set alignment for title cell | 
 | `String` | ToString() | Render the table | 
@@ -98,7 +98,7 @@ Methods
 
 Static Methods
 
-| Type | Name | Summary | 
+| Return Type | Name | Summary | 
 | --- | --- | --- | 
 | `AsciiTableGenerator` | FromDataTable(`DataTable` table, `Options` options = null, `Boolean` autoCaptions = True) | Create an AsciiTableGenerator instance with a datatable as its source | 
 | `AsciiTableGenerator` | FromEnumerable(`IEnumerable<T>` data, `Options` options = null, `Boolean` autoCaptions = True) | Create an AsciiTableGenerator instance with an enumerable of some type as its source | 
