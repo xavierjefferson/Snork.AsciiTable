@@ -19,7 +19,7 @@ namespace Snork.AsciiTable.Tests
         [Fact]
         public void TestEmptyWithPrefix()
         {
-            var tmp = new AsciiTableGenerator(new Options { Title = "MyTableName", Prefix = "xxyy  " });
+            var tmp = new AsciiTableGenerator(new Options { Title = "MyTableName", LinePrefix = "xxyy  " });
             var asString = tmp.ToString();
             Assert.NotNull(asString);
             Assert.Equal("MyTableName", tmp.GetTitle());
@@ -59,9 +59,8 @@ xxyy  '-------------'", asString);
             tmp.SetHeading("Column1", "Column2");
             tmp.AddRange(new[] { new List<object> { "Value1", "Value2" } });
             tmp.Add(new List<object> { "Case1", "Case2" });
-            tmp.Add(new[] { new TestInfo { Field3 = "abc", Field2 = "def" } },
-                i => new List<object> { i.Field2, i.Field3 });
-            tmp.SetAlignLeft(0).SetAlignRight(1);
+            tmp.Add(new List<object> { "def", "abc" });
+            tmp.SetAlign(0, CellAlignmentEnum.Left).SetAlign(1, CellAlignmentEnum.Right);
             var asString = tmp.ToString();
             Assert.NotNull(asString);
             Assert.Equal(@".-------------------.
@@ -81,8 +80,7 @@ xxyy  '-------------'", asString);
         public void TestBasic2()
         {
             var tmp = new AsciiTableGenerator().SetTitle("CookedMyGoose").Add("Leroy", "Skillet")
-                .Add("E Pluribus", "Veni Vidi Vici")
-                .SetAlignCenter(1);
+                .Add("E Pluribus", "Veni Vidi Vici").SetAlign(1, CellAlignmentEnum.Center);
             var asString = tmp.ToString();
             Assert.NotNull(asString);
             Assert.Equal(@".-----------------------------.
@@ -96,8 +94,8 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerableWithTitleRight()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetTitle("MyTableName").SetTitleAlignRight()
-                .SetHeadingAlignLeft();
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetTitle("MyTableName").SetTitleAlignment(CellAlignmentEnum.Right)
+                .SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
@@ -114,8 +112,8 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerableWithTitleLeft()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetTitle("MyTableName").SetTitleAlignLeft()
-                .SetHeadingAlignLeft();
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetTitle("MyTableName").SetTitleAlignment(CellAlignmentEnum.Left)
+                .SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             var heading = tmp.GetCaptions();
@@ -137,8 +135,8 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerableWithTitleCenter()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetTitle("Ghost12").SetTitleAlignCenter()
-                .SetHeadingAlignLeft();
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetTitle("Ghost12").SetTitleAlignment(CellAlignmentEnum.Center)
+                .SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
@@ -159,7 +157,7 @@ xxyy  '-------------'", asString);
             table.Columns.Add(nameof(TestInfo.Field2), typeof(object));
             table.Columns.Add(nameof(TestInfo.Field3), typeof(object));
             foreach (var m in Items) table.Rows.Add(m.Field2, m.Field3);
-            var tmp = AsciiTableGenerator.FromDataTable(table).SetHeadingAlignLeft();
+            var tmp = AsciiTableGenerator.FromDataTable(table).SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
@@ -175,7 +173,7 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerable()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetHeadingAlignLeft().SetDisplayHeader(true);
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left).SetDisplayCaptions(true);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
@@ -190,7 +188,7 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerableNoHeader()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetHeadingAlignLeft().SetDisplayHeader(false);
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left).SetDisplayCaptions(false);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
@@ -202,25 +200,12 @@ xxyy  '-------------'", asString);
 '--------------------------------------------'", rendered);
         }
 
-        [Fact]
-        public void TestFromIEnumerableWithJustify()
-        {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetHeadingAlignLeft().SetEqualColumnSize(true);
-            var rendered = tmp.ToString();
-            Assert.NotNull(rendered);
-            Assert.Equal(@".-----------------------------------------------.
-| Field2                | Field3                |
-|-----------------------|-----------------------|
-| Im Field2 row3 longer |               1000000 |
-| Im Field2 row2 longer | Im Field3 row2 wow    |
-| Im Field2 row2 longer |                       |
-'-----------------------------------------------'", rendered);
-        }
+
 
         [Fact]
         public void TestFromIEnumerableWithHeading0Left()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetHeadingAlignLeft();
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
@@ -235,7 +220,7 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerableWithHeading0Right()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetHeadingAlignRight();
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetCaptionAlignment(0, CellAlignmentEnum.Right).SetCaptionAlignment(1, CellAlignmentEnum.Right);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
@@ -250,7 +235,7 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerableWithHeading0Center()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetHeadingAlignCenter();
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetCaptionAlignment(0, CellAlignmentEnum.Center).SetCaptionAlignment(1, CellAlignmentEnum.Center);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
@@ -265,7 +250,7 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerableNoBorder()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).RemoveBorder().SetHeadingAlignLeft();
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).DisplayBorder(false).SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@"  Field2                  Field3              
@@ -278,7 +263,7 @@ xxyy  '-------------'", asString);
         [Fact]
         public void TestFromIEnumerableAlignCol1Right()
         {
-            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetAlignRight(1).SetHeadingAlignLeft();
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetAlign(1, CellAlignmentEnum.Right).SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left);
             var rendered = tmp.ToString();
             Assert.NotNull(rendered);
             Assert.Equal(@".--------------------------------------------.
