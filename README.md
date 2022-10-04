@@ -1,7 +1,7 @@
 
 # Ascii Table Generator
 
-This library generates tables in Ascii from raw data, enumerables, and instances of System.Data.DataTable.  Within cells, it has text wrapping capability based on [Snork.TextWrap](#https://github.com/xavierjefferson/Snork.TextWrap)
+This library generates tables in Ascii from raw data, enumerables, and instances of System.Data.DataTable.  Within cells, it has text wrapping capability based on this author's [Snork.TextWrap](https://github.com/xavierjefferson/Snork.TextWrap) library.
 
 [![Latest version](https://img.shields.io/nuget/v/Snork.AsciiTable.svg)](https://www.nuget.org/packages/Snork.AsciiTable/) 
 
