@@ -360,6 +360,18 @@ namespace Snork.AsciiTable
         }
 
         /// <summary>
+        ///     Set the caption for a given column
+        /// </summary>
+        /// <param name="index">The zero-based column index</param>
+        /// <param name="caption">Desired setting as string</param>
+        /// <returns>The current instance</returns>
+        public AsciiTableGenerator SetCaption(int index, string caption)
+        {
+            EnsureColumnsExist(index+1);
+            GetColumn(index).Caption = caption;
+            return this;
+        }
+        /// <summary>
         ///     Setting for whether captions are displayed or not
         /// </summary>
         /// <param name="value">Desired setting as boolean</param>
@@ -511,7 +523,28 @@ namespace Snork.AsciiTable
             var rowSeparator = GetRowSeparator(info, columns);
             if (_hasCaptions)
             {
-                resultLines.AddRange(RenderFlatRow(info, captions, ' ', columns, RowTypeEnum.Caption));
+                if (columns.All(i => i.ColumnWidthType == ColumnWidthTypeEnum.Auto))
+                {
+                    resultLines.AddRange(RenderFlatRow(info, captions, ' ', columns, RowTypeEnum.Caption));
+                }
+                else
+                {
+                    List<CellLines> cellLines = new List<CellLines>();
+                    foreach (var item in columns.Select((value, index) => new { Value = value, Index = index }))
+                    {
+                        var caption = captions[item.Index];
+                        if (item.Value.ColumnWidthType == ColumnWidthTypeEnum.Auto)
+                        {
+                            cellLines.Add(GetLines(caption, item.Index, info));
+                        }
+                        else
+                        {
+                            cellLines.Add(GetWrappedLines(caption, item.Value));
+                        }
+                    }
+                    resultLines.AddRange(RenderRow(info, ' ', columns, RowTypeEnum.Caption, (x) => cellLines[x]));
+                }
+
                 resultLines.AddRange(rowSeparator);
             }
 
@@ -634,7 +667,7 @@ namespace Snork.AsciiTable
         {
             return new CellLines(TextWrapper.Wrap(value.ToString(), column.ColumnWidth,
                     column.TextWrapperOptions))
-                { CellValue = value };
+            { CellValue = value };
         }
 
         private string GetSeparator(RenderInfo info, int length, char? sep = null)

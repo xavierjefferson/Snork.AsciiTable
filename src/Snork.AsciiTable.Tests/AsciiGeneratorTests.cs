@@ -274,5 +274,32 @@ xxyy  '-------------'", asString);
 | Im Field2 row2 longer |                    |
 '--------------------------------------------'", rendered);
         }
+
+
+        [Fact]
+        public void TestWrapped1()
+        {
+            var tmp = AsciiTableGenerator.FromEnumerable(Items).SetAlign(1, CellAlignmentEnum.Right).SetCaptionAlignment(0, CellAlignmentEnum.Left).SetCaptionAlignment(1, CellAlignmentEnum.Left);
+            tmp.SetCaption(0, "Description").SetColumnWidth(0, ColumnWidthTypeEnum.Fixed, 10);
+            tmp.DisplayRowSeparators(true);
+            var rendered = tmp.ToString();
+            Assert.NotNull(rendered);
+            Assert.Equal(@".---------------------------------.
+| Descriptio | Field3             |
+| n          |                    |
+|------------|--------------------|
+| Im Field2  |            1000000 |
+| row3       |                    |
+| longer     |                    |
+|------------|--------------------|
+| Im Field2  | Im Field3 row2 wow |
+| row2       |                    |
+| longer     |                    |
+|------------|--------------------|
+| Im Field2  |                    |
+| row2       |                    |
+| longer     |                    |
+'---------------------------------'", rendered);
+        }
     }
 }
